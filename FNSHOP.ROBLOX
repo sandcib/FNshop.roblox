@@ -1,0 +1,479 @@
+-- ═══════════════════════════════════════════════════
+-- 🎮 FN SHOP MENU - เวอร์ชันปรับปรุงใหม่
+-- ═══════════════════════════════════════════════════
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+UIS.TouchEnabled = true
+
+-- ═══════════ โหลด Rayfield UI ═══════════
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ═══════════ ตัวแปรเก็บค่าตั้งต้น ═══════════
+local Config = {
+    WalkSpeed = 16,
+    JumpPower = 50,
+    InfiniteJump = false,
+    FullBright = false,
+    AntiAFK = false,
+}
+
+-- ═══════════ ฟังก์ชันช่วย ═══════════
+local function getHumanoid()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    return char:FindFirstChildWhichIsA("Humanoid")
+end
+
+local function getRoot()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart")
+end
+
+-- ═══════════ สร้างหน้าต่างหลัก ═══════════
+local Window = Rayfield:CreateWindow({
+    Name = "🎮 FN SHOP",
+    LoadingTitle = "กำลังโหลดเมนู...",
+    LoadingSubtitle = "by FN SHOP",
+    Theme = "Amethyst",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "FNSHOP",
+        FileName = "Config"
+    },
+    KeySystem = false
+})
+
+-- ═══════════ แท็บ: ความเร็ว ═══════════
+local SpeedTab = Window:CreateTab("⚡ ความเร็ว", 4483362458)
+
+local SpeedSection = SpeedTab:CreateSection("เดิน / วิ่ง")
+
+local WalkSpeedSlider = SpeedTab:CreateSlider({
+    Name = "ความเร็วเดิน",
+    Range = {16, 500},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(value)
+        Config.WalkSpeed = value
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = value end
+    end
+})
+
+SpeedTab:CreateButton({
+    Name = "🔄 รีเซ็ตความเร็ว",
+    Callback = function()
+        Config.WalkSpeed = 16
+        WalkSpeedSlider:Set(16)
+        local hum = getHumanoid()
+        if hum then hum.WalkSpeed = 16 end
+    end
+})
+
+local JumpSection = SpeedTab:CreateSection("กระโดด")
+
+local JumpSlider = SpeedTab:CreateSlider({
+    Name = "พลังกระโดด",
+    Range = {50, 500},
+    Increment = 1,
+    Suffix = " power",
+    CurrentValue = 50,
+    Flag = "JumpPower",
+    Callback = function(value)
+        Config.JumpPower = value
+        local hum = getHumanoid()
+        if hum then
+            hum.UseJumpPower = true
+            hum.JumpPower = value
+        end
+    end
+})
+
+SpeedTab:CreateToggle({
+    Name = "🦘 กระโดดไม่จำกัด",
+    CurrentValue = false,
+    Flag = "InfiniteJump",
+    Callback = function(state)
+        Config.InfiniteJump = state
+    end
+})
+
+-- ═══════════ แท็บ: ผู้เล่น ═══════════
+local PlayerTab = Window:CreateTab("👤 ผู้เล่น", 4483362458)
+
+local MiscSection = PlayerTab:CreateSection("ทั่วไป")
+
+PlayerTab:CreateButton({
+    Name = "♻️ รีเซ็ตตัวละคร",
+    Callback = function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildWhichIsA("Humanoid")
+            if hum then hum.Health = 0 end
+        end
+    end
+})
+
+PlayerTab:CreateButton({
+    Name = "💚 ฟื้นฟู HP เต็ม",
+    Callback = function()
+        local hum = getHumanoid()
+        if hum then hum.Health = hum.MaxHealth end
+    end
+})
+
+PlayerTab:CreateToggle({
+    Name = "🤖 กัน AFK (Anti-AFK)",
+    CurrentValue = false,
+    Flag = "AntiAFK",
+    Callback = function(state)
+        Config.AntiAFK = state
+    end
+})
+
+PlayerTab:CreateButton({
+    Name = "🔄 รีสปอว์น",
+    Callback = function()
+        LocalPlayer:LoadCharacter()
+    end
+})
+
+-- ═══════════ แท็บ: แสง / กราฟิก ═══════════
+local VisualTab = Window:CreateTab("🎨 กราฟิก", 4483362458)
+
+local LightSection = VisualTab:CreateSection("แสงสว่าง")
+
+local originalLighting = {
+    Brightness = game.Lighting.Brightness,
+    ClockTime = game.Lighting.ClockTime,
+    FogEnd = game.Lighting.FogEnd,
+    Ambient = game.Lighting.Ambient
+}
+
+VisualTab:CreateToggle({
+    Name = "☀️ Full Bright",
+    CurrentValue = false,
+    Flag = "FullBright",
+    Callback = function(state)
+        Config.FullBright = state
+        if state then
+            game.Lighting.Brightness = 3
+            game.Lighting.ClockTime = 14
+            game.Lighting.FogEnd = 100000
+            game.Lighting.Ambient = Color3.fromRGB(178, 178, 178)
+            game.Lighting.Outlines = false
+            game.Lighting.GlobalShadows = false
+        else
+            game.Lighting.Brightness = originalLighting.Brightness
+            game.Lighting.ClockTime = originalLighting.ClockTime
+            game.Lighting.FogEnd = originalLighting.FogEnd
+            game.Lighting.Ambient = originalLighting.Ambient
+            game.Lighting.GlobalShadows = true
+        end
+    end
+})
+
+VisualTab:CreateSlider({
+    Name = "เวลา (Clock Time)",
+    Range = {0, 24},
+    Increment = 1,
+    Suffix = " ชม.",
+    CurrentValue = 14,
+    Flag = "ClockTime",
+    Callback = function(value)
+        game.Lighting.ClockTime = value
+    end
+})
+
+VisualTab:CreateButton({
+    Name = "🌙 กลางคืน",
+    Callback = function()
+        game.Lighting.ClockTime = 0
+    end
+})
+
+VisualTab:CreateButton({
+    Name = "☀️ กลางวัน",
+    Callback = function()
+        game.Lighting.ClockTime = 14
+    end
+})
+
+-- ═══════════ แท็บ: เทเลพอร์ต ═══════════
+local TPTab = Window:CreateTab("🌀 เทเลพอร์ต", 4483362458)
+
+TPTab:CreateSection("ไปยังผู้เล่น")
+
+local selectedPlayer = nil
+local playerDropdown = TPTab:CreateDropdown({
+    Name = "เลือกผู้เล่น",
+    Options = {},
+    CurrentOption = {},
+    MultipleOptions = false,
+    Flag = "PlayerTP",
+    Callback = function(option)
+        selectedPlayer = option
+    end
+})
+
+-- อัปเดตรายชื่อผู้เล่น
+local function refreshPlayers()
+    local list = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.Name)
+        end
+    end
+    playerDropdown:Refresh(list, true)
+end
+
+refreshPlayers()
+Players.PlayerAdded:Connect(refreshPlayers)
+Players.PlayerRemoving:Connect(function() task.wait(0.5) refreshPlayers() end)
+
+TPTab:CreateButton({
+    Name = "📍 เทเลพอร์ตไปหาผู้เล่น",
+    Callback = function()
+        if not selectedPlayer then return end
+        local target = Players:FindFirstChild(selectedPlayer)
+        if not target or not target.Character then return end
+        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+        local myRoot = getRoot()
+        if targetRoot and myRoot then
+            myRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+})
+
+TPTab:CreateSection("ตำแหน่ง")
+
+local posX = TPTab:CreateInput({
+    Name = "X",
+    CurrentValue = "0",
+    PlaceholderText = "0",
+    Flag = "TPX"
+})
+local posY = TPTab:CreateInput({
+    Name = "Y",
+    CurrentValue = "0",
+    PlaceholderText = "0",
+    Flag = "TPY"
+})
+local posZ = TPTab:CreateInput({
+    Name = "Z",
+    CurrentValue = "0",
+    PlaceholderText = "0",
+    Flag = "TPZ"
+})
+
+TPTab:CreateButton({
+    Name = "🚀 เทเลพอร์ตไปตำแหน่ง",
+    Callback = function()
+        local root = getRoot()
+        if root then
+            root.CFrame = CFrame.new(
+                tonumber(posX.Value) or 0,
+                tonumber(posY.Value) or 0,
+                tonumber(posZ.Value) or 0
+            )
+        end
+    end
+})
+
+-- ═══════════ แท็บ: ข้อมูล ═══════════
+local InfoTab = Window:CreateTab("ℹ️ ข้อมูล", 4483362458)
+
+InfoTab:CreateParagraph({
+    Title = "FN SHOP MENU",
+    Content = "เมนูคุณภาพสูง • ใช้งานง่าย\nเวอร์ชัน 2.0\n\nกดปุ่ม ☰ เพื่อเปิด/ปิดเมนู\nลากปุ่มเพื่อย้ายตำแหน่งได้"
+})
+
+InfoTab:CreateParagraph({
+    Title = "หมายเหตุ",
+    Content = "• เมนูนี้ใช้สำหรับการทดสอบเท่านั้น\n• กรุณาใช้อย่างมีความรับผิดชอบ\n• ไม่รองรับทุกเกม"
+})
+
+-- ═══════════ ลูปหลัก ═══════════
+RunService.Heartbeat:Connect(function()
+    local hum = getHumanoid()
+    if hum then
+        -- อัปเดตความเร็วตลอดเวลา
+        if hum.WalkSpeed ~= Config.WalkSpeed then
+            hum.WalkSpeed = Config.WalkSpeed
+        end
+        -- อัปเดตพลังกระโดด
+        if hum.UseJumpPower and hum.JumpPower ~= Config.JumpPower then
+            hum.JumpPower = Config.JumpPower
+        end
+    end
+end)
+
+-- กระโดดไม่จำกัด
+UIS.JumpRequest:Connect(function()
+    if Config.InfiniteJump then
+        local hum = getHumanoid()
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+-- Anti-AFK
+LocalPlayer.Idled:Connect(function()
+    if Config.AntiAFK then
+        local vu = game:GetService("VirtualUser")
+        vu:CaptureController()
+        vu:ClickButton2(Vector2.new())
+    end
+end)
+
+-- เมื่อตัวละครเกิดใหม่ ให้ค่ากลับมา
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    local hum = char:FindFirstChildWhichIsA("Humanoid")
+    if hum then
+        hum.WalkSpeed = Config.WalkSpeed
+        hum.UseJumpPower = true
+        hum.JumpPower = Config.JumpPower
+    end
+end)
+
+-- ═══════════════════════════════════════════════════
+-- 🎯 ปุ่มลอยเปิด/ปิดเมนู + ระบบพับหด
+-- ═══════════════════════════════════════════════════
+
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "FN_ToggleBtn"
+ToggleGui.ResetOnSpawn = false
+ToggleGui.IgnoreGuiInset = true
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ToggleGui.Parent = PlayerGui
+
+-- ปุ่มลอย
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Name = "ToggleButton"
+ToggleBtn.Size = UDim2.new(0, 56, 0, 56)
+ToggleBtn.Position = UDim2.new(0, 20, 0.35, 0)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(150, 60, 220)
+ToggleBtn.Text = "☰"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 28
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.AutoButtonColor = false
+ToggleBtn.ZIndex = 9999
+ToggleBtn.Parent = ToggleGui
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = ToggleBtn
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(220, 180, 255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Transparency = 0.3
+ToggleStroke.Parent = ToggleBtn
+
+local ToggleShadow = Instance.new("ImageLabel")
+ToggleShadow.Name = "Shadow"
+ToggleShadow.BackgroundTransparency = 1
+ToggleShadow.Size = UDim2.new(1, 20, 1, 20)
+ToggleShadow.Position = UDim2.new(0, -10, 0, -6)
+ToggleShadow.Image = "rbxassetid://6014261993"
+ToggleShadow.ImageColor3 = Color3.fromRGB(100, 30, 180)
+ToggleShadow.ImageTransparency = 0.4
+ToggleShadow.ZIndex = 9998
+ToggleShadow.Parent = ToggleBtn
+
+-- ═══════════ ลากปุ่ม ═══════════
+local dragging = false
+local dragStart, startPos
+
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch 
+    or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = ToggleBtn.Position
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.Touch 
+    or input.UserInputType == Enum.UserInputType.MouseMovement) then
+        local delta = input.Position - dragStart
+        ToggleBtn.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch 
+    or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- ═══════════ ซ่อน/แสดงเมนู ═══════════
+local menuVisible = true
+
+local function findMainFrame()
+    for _, gui in pairs(PlayerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and gui.Name ~= "FN_ToggleBtn" then
+            if gui.Name:lower():find("rayfield") or gui.Name == "Rayfield" then
+                return gui
+            end
+        end
+    end
+    -- fallback: หา ScreenGui ที่ไม่ใช่ของเรา
+    for _, gui in pairs(PlayerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and gui.Name ~= "FN_ToggleBtn" and gui.Name ~= "TB" then
+            return gui
+        end
+    end
+    return nil
+end
+
+local function setMenuVisible(visible)
+    menuVisible = visible
+    local mainGui = findMainFrame()
+    if mainGui then
+        mainGui.Enabled = visible
+    end
+    TweenService:Create(ToggleBtn, TweenInfo.new(0.25, Enum.EasingStyle.Back), {
+        BackgroundColor3 = visible and Color3.fromRGB(150, 60, 220) or Color3.fromRGB(60, 60, 70)
+    }):Play()
+end
+
+-- กดปุ่มเพื่อเปิด/ปิด
+local clickCount = 0
+ToggleBtn.MouseButton1Click:Connect(function()
+    if dragging then return end
+    setMenuVisible(not menuVisible)
+    -- เอฟเฟกต์
+    TweenService:Create(ToggleBtn, TweenInfo.new(0.1), {
+        Size = UDim2.new(0, 62, 0, 62)
+    }):Play()
+    task.wait(0.1)
+    TweenService:Create(ToggleBtn, TweenInfo.new(0.1), {
+        Size = UDim2.new(0, 56, 0, 56)
+    }):Play()
+end)
+
+-- ═══════════ แจ้งเตือน ═══════════
+Rayfield:Notify({
+    Title = "✅ FN SHOP",
+    Content = "โหลดเมนูสำเร็จ! กดปุ่ม ☰ เพื่อซ่อน/แสดงเมนู",
+    Duration = 5,
+    Image = 4483362458,
+})
+
+print("[FN SHOP] โหลดเสร็จเรียบร้อย ✅")
